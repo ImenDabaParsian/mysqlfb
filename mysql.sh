@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/bin/bash
 
 # a function to email script report:
 function sendmail(){
@@ -19,16 +19,15 @@ function sendmail(){
 	    # sleep 5
 	    echo data
 	    sleep 5
-	    echo "Subject: Backup report - Git"
+	    echo "Subject:" $subject
 	    echo -e $content
 	    echo "."
 	    sleep 5
 	    echo quit
 	) | telnet
 	flag=false
-	if [ $? -eq 0 ]; then
-	    echo "We have some problem in sending email via telnet." > backup.log
-	    echo -e $emailcontent >> backup.log
+	if [ $? -ne 0 ]; then
+	    echo "** We have some problem in sending email via telnet." >> /home/daba/scripts/mysql/backup.log
 	    exit 1
 	else
 	    exit 0
@@ -59,16 +58,13 @@ scp=$(which scp)
 telnet=$(which telnet)
 ssh=$(which ssh)
 md5sum=$(which md5sum)
-
-# newbackup="netband-$server-$data.sql"
-# oldbackup='netband-$server-$(data --date="yesterday" +"%F").sql'
-emailcontent=""
+echo "" > /home/daba/scripts/mysql/backup.log
 
 # create backup directory:
 if [ ! -d $backup_dir ]; then
     res=$($mkdir $backup_dir)
     if [ $? -ne 0 ]; then
-	emailcontent=$emailcontent"We have a problem in creating backup directory. (Error Massage: "$res").\n"
+	echo "** We have a problem in creating backup directory. (Error Massage: "$res")." >> /home/daba/scripts/mysql/backup.log
 	# sendmail "$(echo $emailcontent)" "netband ("$server") backup failed."
     fi
 fi
@@ -76,134 +72,105 @@ fi
 # dumping databases in four different files:
 for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     # First file is DB schematic:
-    res=$($mysqldump --user=$username --password=$password --databases $edatabase --no-data --skip-triggers --result-file=$backup_dir/$database-schema-$date.sql 2>&1)
+    res=$($mysqldump --user=$username --password=$password --databases $edatabase --no-data --skip-triggers --result-file=$backup_dir/$edatabase-schema-$date.sql 2>&1)
     if [ $? -ne 0 ]; then
-	emailcontent=$emailcontent"We have a problem in dumping "$edatabase" schematic. (Error Message= "$res").\n"
+	echo "** We have a problem in dumping "$edatabase" schematic. (Error Message= "$res")." >> /home/daba/scripts/mysql/backup.log
     else
-	emailcontent=$emailcontent$edatabase" schematic dumped successfully.\n"
+	echo $edatabase" schematic dumped successfully." >> /home/daba/scripts/mysql/backup.log
     fi
     # Second file is DB data:
-    res=$($mysqldump --user=$username --password=$password --databases $edatabase --no-create-info --skip-triggers --result-file=$backup_dir/$database-data-$date.sql 2>&1)
+    res=$($mysqldump --user=$username --password=$password --databases $edatabase --no-create-info --skip-triggers --result-file=$backup_dir/$edatabase-data-$date.sql 2>&1)
     if [ $? -ne 0 ]; then
-	emailcontent=$emailcontent"We have a problem in dumping "$edatabase" data. (Error Message= "$res").\n"
+	echo "** We have a problem in dumping "$edatabase" data. (Error Message= "$res")." >> /home/daba/scripts/mysql/backup.log
 	# sendmail "$(echo $emailcontent)" "netband ("$server") backup failed."
     else
-	emailcontent=$emailcontent$edatabase" data dumped successfully.\n"
+	echo $edatabase" data dumped successfully." >> /home/daba/scripts/mysql/backup.log
     fi
     # third file is DB triggers:
-    res=$($mysqldump --user=$username --password=$password --databases $edatabase --no-create-info --no-data --triggers --result-file=$backup_dir/$database-triggers-$date.sql 2>&1)
+    res=$($mysqldump --user=$username --password=$password --databases $edatabase --no-create-info --no-data --triggers --result-file=$backup_dir/$edatabase-triggers-$date.sql 2>&1)
     if [ $? -ne 0 ]; then
-	emailcontent=$emailcontent"We have a problem in dumping "$edatabase" triggers. (Error Message= "$res").\n"
+	echo "** We have a problem in dumping "$edatabase" triggers. (Error Message= "$res")." >> /home/daba/scripts/mysql/backup.log
     else
-	emailcontent=$emailcontent$edatabase" triggers dumped successfully.\n"
+	echo $edatabase" triggers dumped successfully." >> /home/daba/scripts/mysql/backup.log
     fi
     # frouth file is All of DB without trigggers:
-    res=$($mysqldump --user=$username --password=$password --databases $edatabase --skip-triggers --result-file=$backup_dir/$database-$date.sql 2>&1)
+    res=$($mysqldump --user=$username --password=$password --databases $edatabase --skip-triggers --result-file=$backup_dir/$edatabase-$date.sql 2>&1)
     if [ $? -ne 0 ]; then
-	emailcontent=$emailcontent"We have a problem in dumping "$edatabase". (Error Message= "$res").\n"
+	echo "** We have a problem in dumping "$edatabase". (Error Message= "$res")." >> /home/daba/scripts/mysql/backup.log
     else
-	emailcontent=$emailcontent$edatabase" dumped in all-in-one file successfully.\n"
+	echo $edatabase" dumped in all-in-one file successfully." >> /home/daba/scripts/mysql/backup.log
     fi
 done
 
 # capture binary log file:
 res=$($tar --create --absolute-name --gzip --file $backup_dir/binary-logs-$date.tar.gz /var/log/mysql/* 2>&1)
 if [ $? -ne 0 ]; then
-    emailcontent=$emailcontent"We have a problem in caputring binary log files. (Error Message= "$res")\n"
+    echo "** We have a problem in caputring binary log files. (Error Message= "$res")" >> /home/daba/scripts/mysql/backup.log
     # sendmail "$(echo $emailcontent)" "netband ("$server") backup failed."
 else
-    emailcontent=$emailcontent"Mysql binary log files successfully backed up in compressed tar archive.\n"
+    echo "Mysql binary log files successfully backed up in compressed tar archive." >> /home/daba/scripts/mysql/backup.log
 fi
 
 # capture config files:
 res=$($tar --create --absolute-name --gzip --file $backup_dir/config-files-$date.tar.gz /etc/mysql 2>&1)
 if [ $? -ne 0 ]; then
-    emailcontent=$emailcontent"We have a problem in backing up mysql config files. (Error Message= "$res")\n"
+    echo "** We have a problem in backing up mysql config files. (Error Message= "$res")" >> /home/daba/scripts/mysql/backup.log
 else
-    emailcontent=$emailcontent"Mysql config files successfull backed up.\n"
+    echo "Mysql config files successfull backed up." >> /home/daba/scripts/mysql/backup.log
 fi
 
 # dump mysql database for backing up users and privileges:
-res=$($mysqldump --user=$username --password=$password --databases mysql --skip-triggers --result-file=$backup_dir/$database-privileges-$date.sql 2>&1)
+res=$($mysqldump --user=$username --password=$password --databases mysql --skip-triggers --result-file=$backup_dir/database-privileges-$date.sql 2>&1)
 if [ $? -ne 0 ]; then
-    emailcontent=$emailcontent"We have a problem in dumping mysql database. (Error Message= "$res")\n"
+    echo "** We have a problem in dumping mysql database. (Error Message= "$res")" >> /home/daba/scripts/mysql/backup.log
 else
-    emailcontent=$emailcontent"User and Privileges backed up successfully.\n"
+    echo "User and Privileges backed up successfully." >> /home/daba/scripts/mysql/backup.log
 fi
 
 #create remote directory for today files:
-res=$($ssh -i key.pri back@172.18.0.3 /bin/mkdir -p /home/backup/$rbackup_dir/$date)
+res=$($ssh -i /home/daba/scripts/mysql/key.pri back@172.18.0.3 /bin/mkdir -p /home/backup/$rbackup_dir/$date)
 if [ $? -ne 0 ]; then
-    emailcontent=$emailcontent"We have a problem in creteing today backup directory on backup server.\n"
+    echo "** We have a problem in creteing today backup directory on backup server." >> /home/daba/scripts/mysql/backup.log
 else
-    emailcontent=$emailcontent"Today backup directory created successfully.\n"
+    echo "Today backup directory created successfully." >> /home/daba/scripts/mysql/backup.log
 fi
 
-# # create remote backup directory:
-# res=$($ssh -i key.pri back@172.18.0.3 mkdir -p $rbackup_dir/$date )
-# if [ $? -ne 0 ]; then
-#     emailcontent=$emailcontent"We have a problem in creating today backup directory. (Error Massage: "$res").\n"
-# else
-#     emailcontent=$emailcontent"Today remote backup directory successfully created.\n"
-# fi
-
 # transfer backup files to backup disk
+file_counter=0
 for efile in $(ls -1 $backup_dir); do
-    echo "fileee: " $efile
-    echo $backup_dir/$efile
-    res=$($scp -i key.pri $backup_dir/$efile back@172.18.0.3:~/$rbackup_dir/$date 2>&1)
+    res=$($scp -i /home/daba/scripts/mysql/key.pri $backup_dir/$efile back@172.18.0.3:~/$rbackup_dir/$date 2>&1)
     if [ $? -ne 0 ]; then
-	emailcontent=$emailcontent"We have a problem in copying "$efile" to backup disk. (Error Message: "$res").\n"
+	echo "** We have a problem in copying "$efile" to backup disk. (Error Message: "$res")." >> /home/daba/scripts/mysql/backup.log
     else
-	emailcontent=$emailcontent$efile" copyed successfully.\n"
+	echo $efile" copyed successfully." >> /home/daba/scripts/mysql/backup.log
 	# compare files MD5 checksum and remove new files from server and od files from backup server if result of compare is OK
 	local_file_md5=$($md5sum $backup_dir/$efile | cut -d" " -f1 2>&1)
-	echo "local file md5*******: " $local_file_md5
-	remote_file_md5=$($ssh -i key.pri back@172.18.0.3 /usr/bin/md5sum /home/backup/$rbackup_dir/$date/$efile | cut -d" " -f1 2>&1)
-	echo "remote file md5: " $remote_file_md5
+	remote_file_md5=$($ssh -i /home/daba/scripts/mysql/key.pri back@172.18.0.3 /usr/bin/md5sum /home/backup/$rbackup_dir/$date/$efile | cut -d" " -f1 2>&1)
 	if [[ $local_file_md5 == $remote_file_md5 ]]; then
-	    emailcontent=$emailcontent$efile" backup file correctly transfered.\n"
+	    echo $efile" backup file correctly transfered." >> /home/daba/scripts/mysql/backup.log
 	    rm $backup_dir/$efile
-	    emailcontent=$emailcontent$efile" local backup file deleted from server.\n"
+	    echo $efile" local backup file deleted from server." >> /home/daba/scripts/mysql/backup.log
+	    file_counter=$(expr $file_counter + 1 ) 
 	else
-	    emailcontent=$emailcontent "An error occur in transfering" $efile "backup file to backup server and the file on the server is crroupted\n"
-	fi    
+	    echo "** An error occur in transfering" $efile "backup file to backup server and the file on the server is crroupted" >> /home/daba/scripts/mysql/backup.log
+	fi
     fi
 done
-
-echo "========= emailcontent before send function:"$emailcontent
+if [ $file_counter -eq 7 ]; then
+    yesterday=$(date --date="yesterday" +"%F")
+    res=$($ssh -i /home/daba/scripts/mysql/key.pri back@172.18.0.3 /bin/rm -r /home/backup/$rbackup_dir/$yesterday 2>&1)
+    if [ $? -ne 0 ]; then
+	echo "** We have a problem in removing old directory from backup server. (Error Massage: "$res")." >> /home/daba/scripts/mysql/backup.log
+    else
+	echo "Old backup directory successfully removed from backup server." >> /home/daba/scripts/mysql/backup.log
+    fi
+fi
 
 # send backup report via email:
-sendmail "$(echo -e $emialcontent)" "$(echo Subject: Backup From "$host" mysql service - "$database" database[s])" 
+emailcontent=""
+while read -r line; do
+    emailcontent=$emailcontent$line"\n"
+done < <(cat /home/daba/scripts/mysql/backup.log)
+sendmail "$(echo $emailcontent)" "$(echo Subject: Backup From "$host" mysql service - "$database" database[s])"
 
-# dump database
-# res=$(/usr/bin/mysqldump --user=$user --password=$password --databases $database --result-file=~/$newbackup 2>&1)
-# if [ $? -eq 0 ]; then
-#     emailcontent=$emailcontent" database successfully dumped."
-#     # transfer to backup machine
-#     scp ~/$newbackup daba@172.18.0.32:~/backup/netband/database
-#     if [ $? -eq 0 ]; then
-# 	emailcontent=$emailcontent" backup file successfully transferd."
-# 	# check files md5 check sum and remove backup file if it's same:
-# 	remote_file=$(ssh daba@172.18.0.32 md5sum ~/backup/netband/database/$newbackup | awk '{print $1}')
-# 	source_file=$(md5sum ~/$newbackup | awk '{print $1}')
-# 	if [[ $remote_file == $source_file ]];  then
-# 	    rm ~/$newbackup
-# 	    ssh daba@172.18.0.32 rm ~/backup/netband/database/$oldbackup
-# 	    emailcontent=$emailcontent" old backup file and temporary backupfile successfully removed."
-# 	else
-# 	    emailcontent=$emailcontent" We have a problem in checking MD5 hash or removing old files."
-# 	    sendmail "$(echo $emailcontent)" "netband ("$server") backup failed"
-# 	fi
-#     else
-# 	emailcontent=$emailcontent" We have a problem in transfering backed up file to backup machine."
-# 	sendmail "$(echo $emailcontent)" "netband ("$server") backup failed"
-#     fi
-# else
-#     emailcontent=$emailcontent" We have a problem in dumping mysql. (Error Message = "$res")"
-#     sendmail "$(echo $emailcontent)" "netband ("$server") backup failed"
-# fi
-
-# # send report
-# sendmail "$(echo $emailcontent)" "netband ("$server") backup successful"
-
+exit 0
