@@ -1,5 +1,14 @@
 #!/bin/bash
 
+###########################################################################
+# FileName:    mysql.sh							  #
+# Description: supply mysql service backup from some different way.	  #
+#              (schema, data, triggers, all-in-one), configs, binary logs #
+#              and mysql usre privileges.				  #
+# Version:     1.0 stabel						  #
+# Feedback:    v.maani@dabacenter.ir/Vahid.Maani@gmial.com		  #
+###########################################################################
+
 # a function to email script report:
 function sendmail(){
     content=$1
