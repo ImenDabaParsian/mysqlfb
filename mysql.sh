@@ -5,7 +5,7 @@
 # Description: supply mysql service backup from some different way.	  #
 #              (schema, data, triggers, all-in-one), configs, binary logs #
 #              and mysql usre privileges.				  #
-# Version:     1.01 stabel						  #
+# Version:     1.02 stabel						  #
 # Feedback:    v.maani@dabacenter.ir/Vahid.Maani@gmial.com		  #
 ###########################################################################
 
@@ -67,7 +67,7 @@ scp=$(which scp)
 telnet=$(which telnet)
 ssh=$(which ssh)
 md5sum=$(which md5sum)
-script_dir=$0
+script_dir=$(echo $0 | rev | cut -d"/" -f2- | rev)
 echo "" > $script_dir/backup.log
 
 # create backup directory:
