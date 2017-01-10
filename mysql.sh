@@ -67,7 +67,7 @@ scp=$(which scp)
 telnet=$(which telnet)
 ssh=$(which ssh)
 md5sum=$(which md5sum)
-script_dir=$(pwd)
+script_dir=$0
 echo "" > $script_dir/backup.log
 
 # create backup directory:
