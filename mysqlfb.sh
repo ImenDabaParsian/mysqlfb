@@ -67,8 +67,25 @@ scp=$(which scp)
 telnet=$(which telnet)
 ssh=$(which ssh)
 md5sum=$(which md5sum)
+cat=$(which cat)
 script_dir=$(echo $0 | rev | cut -d"/" -f2- | rev)
 echo "" > $script_dir/backup.log
+
+#create remote directory for today files:
+res=$($ssh -i $script_dir/key.pri back@172.18.0.3 /bin/mkdir -p /home/backup/$rbackup_dir/$date 2>&1)
+if [ $? -ne 0 ]; then
+    echo "[×] We have a problem in creteing today backup directory on backup server." >> $script_dir/backup.log
+else
+    echo "[✓]" "Today backup directory created successfully." >> $script_dir/backup.log
+fi
+
+# create inprogress file in remote directory
+res=$($ssh -i $script_dir/key.pri back@172.18.0.3 /bin/echo "1" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)
+if [ $? -ne 0 ]; then
+    echo "[×] There is a problem in creating inprogress file. (Error Massage: "$res")." >> $script_dir/backup.log
+else
+    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+fi
 
 # create backup directory:
 if [ ! -d $backup_dir ]; then
@@ -100,13 +117,26 @@ for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     res=$($mysqldump --user=$username --password=$password --databases $edatabase --no-create-info --skip-triggers --result-file=$backup_dir/$edatabase-data-$date.sql 2>&1)
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in dumping "$edatabase" data. (Error Message= "$res")." >> $script_dir/backup.log
-	# sendmail "$(echo $emailcontent)" "netband ("$server") backup failed."
+	# update inprogress file content:
+	res=$($ssh -i $script_dir/key.pri back@172.18.0.3 /bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)
+	if [ $? -ne 0 ]; then
+	    echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
+	else
+	    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+	fi
     else
 	echo "[✓]" $edatabase" data dumped successfully." >> $script_dir/backup.log
     fi
     res=$($tar --create --absolute-name --gzip --file $backup_dir/$edatabase-data-$date.sql.gz $backup_dir/$edatabase-data-$date.sql 2>&1)
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in compressing "$edatabase" data file. (Error Message= "$res")." >> $script_dir/backup.log
+	# update inprogress file content:
+	res=$($ssh -i $script_dir/key.pri back@172.18.0.3 /bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)
+	if [ $? -ne 0 ]; then
+	    echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
+	else
+	    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+	fi
     else
 	rm $backup_dir/$edatabase-data-$date.sql
 	echo "[✓]" $edatabase" data successfully compressed." >> $script_dir/backup.log
@@ -168,14 +198,6 @@ else
     echo "[✓]" "User and Privileges backed up successfully." >> $script_dir/backup.log
 fi
 
-#create remote directory for today files:
-res=$($ssh -i $script_dir/key.pri back@172.18.0.3 /bin/mkdir -p /home/backup/$rbackup_dir/$date)
-if [ $? -ne 0 ]; then
-    echo "[×] We have a problem in creteing today backup directory on backup server." >> $script_dir/backup.log
-else
-    echo "[✓]" "Today backup directory created successfully." >> $script_dir/backup.log
-fi
-
 # transfer backup files to backup disk
 file_counter=0
 for efile in $(ls -1 $backup_dir); do
@@ -194,6 +216,15 @@ for efile in $(ls -1 $backup_dir); do
 	    file_counter=$(expr $file_counter + 1 ) 
 	else
 	    echo "[×] An error occur in transfering" $efile "backup file to backup server and the file on the server is crroupted" >> $script_dir/backup.log
+	    if [[ $efile == $edatabase-data-$date.sql.gz ]]; then
+		# update inprogress file content:
+		res=$($ssh -i $script_dir/key.pri back@172.18.0.3 /bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)
+		if [ $? -ne 0 ]; then
+		    echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
+		else
+		    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+		fi
+	    fi
 	fi
     fi
 done
