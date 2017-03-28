@@ -5,7 +5,7 @@
 # Description: supply mysql service backup from some different way.	  #
 #              (schema, data, triggers, all-in-one), configs, binary logs #
 #              and mysql usre privileges.				  #
-# Version:     1.02 stabel						  #
+# Version:     1.03 stabel						  #
 # Feedback:    v.maani@dabacenter.ir/Vahid.Maani@gmail.com		  #
 ###########################################################################
 
@@ -92,6 +92,7 @@ for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in compressing "$edatabase" schematic file. (Error Message= "$res")." >> $script_dir/backup.log
     else
+	rm $backup_dir/$edatabase-schema-$date.sql
 	echo "[✓]" $edatabase" schematic successfully compressed." >> $script_dir/backup.log
     fi
 
@@ -107,6 +108,7 @@ for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in compressing "$edatabase" data file. (Error Message= "$res")." >> $script_dir/backup.log
     else
+	rm $backup_dir/$edatabase-data-$date.sql
 	echo "[✓]" $edatabase" data successfully compressed." >> $script_dir/backup.log
     fi
 
@@ -121,6 +123,7 @@ for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in compressing "$edatabase" triggers file. (Error Message= "$res")." >> $script_dir/backup.log
     else
+	rm $backup_dir/$edatabase-triggers-$date.sql
 	echo "[✓]" $edatabase" triggers successfully compressed." >> $script_dir/backup.log
     fi
 
@@ -135,6 +138,7 @@ for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in compressing "$edatabase" file. (Error Message= "$res")." >> $script_dir/backup.log
     else
+	rm $backup_dir/$edatabase-$date.sql
 	echo "[✓]" $edatabase" successfully compressed." >> $script_dir/backup.log
     fi
 done
