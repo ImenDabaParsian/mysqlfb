@@ -80,11 +80,11 @@ else
 fi
 
 # create inprogress file in remote directory
-res=$($ssh -i $script_dir/key.pri back@172.18.0.3 '(/bin/echo "1" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)')
+res=$($ssh -i $script_dir/key.pri back@172.18.0.3 "(/bin/echo "1" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)")
 if [ $? -ne 0 ]; then
     echo "[×] There is a problem in creating inprogress file. (Error Massage: "$res")." >> $script_dir/backup.log
 else
-    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+    echo "[✓]" "inprogress file successfully updated." >> $script_dir/backup.log
 fi
 
 # create backup directory:
@@ -118,11 +118,11 @@ for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in dumping "$edatabase" data. (Error Message= "$res")." >> $script_dir/backup.log
 	# update inprogress file content:
-	res=$($ssh -i $script_dir/key.pri back@172.18.0.3 '(/bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)')
+	res=$($ssh -i $script_dir/key.pri back@172.18.0.3 "(/bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)")
 	if [ $? -ne 0 ]; then
 	    echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
 	else
-	    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+	    echo "[✓]" "inprogress file successfully updated." >> $script_dir/backup.log
 	fi
     else
 	echo "[✓]" $edatabase" data dumped successfully." >> $script_dir/backup.log
@@ -131,11 +131,11 @@ for edatabase in $(OLDIFS=$IFS; IFS=","; echo $database; IFS=$OLDIFS); do
     if [ $? -ne 0 ]; then
 	echo "[×] We have a problem in compressing "$edatabase" data file. (Error Message= "$res")." >> $script_dir/backup.log
 	# update inprogress file content:
-	res=$($ssh -i $script_dir/key.pri back@172.18.0.3 '(/bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)')
+	res=$($ssh -i $script_dir/key.pri back@172.18.0.3 "(/bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)")
 	if [ $? -ne 0 ]; then
 	    echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
 	else
-	    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+	    echo "[✓]" "inprogress file successfully updated." >> $script_dir/backup.log
 	fi
     else
 	rm $backup_dir/$edatabase-data-$date.sql
@@ -218,22 +218,22 @@ for efile in $(ls -1 $backup_dir); do
 	    echo "[×] An error occur in transfering" $efile "backup file to backup server and the file on the server is crroupted" >> $script_dir/backup.log
 	    if [[ $efile == $edatabase-data-$date.sql.gz ]]; then
 		# update inprogress file content:
-		res=$($ssh -i $script_dir/key.pri back@172.18.0.3 '(/bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)')
+		res=$($ssh -i $script_dir/key.pri back@172.18.0.3 "(/bin/echo "2" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)")
 		if [ $? -ne 0 ]; then
 		    echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
 		else
-		    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+		    echo "[✓]" "inprogress file successfully updated." >> $script_dir/backup.log
 		fi
 	    fi
 	fi
     fi
 done
 
-res=$($ssh -i $script_dir/key.pri back@172.18.0.3 '(/bin/echo "3" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)')
+res=$($ssh -i $script_dir/key.pri back@172.18.0.3 "(/bin/echo "3" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)")
 if [ $? -ne 0 ]; then
     echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
 else
-    echo "[✓]" "inprogress file successfully created." >> $script_dir/backup.log
+    echo "[✓]" "inprogress file successfully updated." >> $script_dir/backup.log
 fi
 
 if [ $file_counter -eq 7 ]; then
