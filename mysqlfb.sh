@@ -229,7 +229,7 @@ for efile in $(ls -1 $backup_dir); do
     fi
 done
 
-res=$($ssh -i $script_dir/key.pri back@172.18.0.3 "(/bin/echo "3" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)")
+res=$($ssh -i $script_dir/key.pri back@172.18.0.3 "(/bin/echo "0" > /home/backup/$rbackup_dir/$date/inprogress.txt 2>&1)")
 if [ $? -ne 0 ]; then
     echo "[×] We could not update inprogress file content! (Error Massage: "$res")." >> $script_dir/backup.log
 else
